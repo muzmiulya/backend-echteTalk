@@ -14,7 +14,7 @@ module.exports = {
     },
     getAllUser: () => {
         return new Promise((resolve, reject) => {
-            connection.query(`SELECT * FROM user`, (error, result) => {
+            connection.query(`SELECT * FROM user WHERE user_status = 1`, (error, result) => {
                 !error ? resolve(result) : reject(new Error(error));
             });
         });
@@ -22,7 +22,7 @@ module.exports = {
     getUserById: (id) => {
         return new Promise((resolve, reject) => {
             connection.query(
-                "SELECT * FROM user WHERE user_id = ?",
+                "SELECT user.user_id, user.user_email, user.user_name, user.user_phone, profile.profile_picture, profile.profile_bio FROM user JOIN profile ON user.user_id = profile.user_id WHERE user.user_id = ?",
                 id,
                 (error, result) => {
                     !error ? resolve(result) : reject(new Error(error));
@@ -68,13 +68,54 @@ module.exports = {
     checkUser: (email) => {
         return new Promise((resolve, reject) => {
             connection.query(
-                "SELECT user_id, user_email, user_password, user_name, user_role, user_status FROM user WHERE user_email = ?",
+                "SELECT * FROM user WHERE user_email = ?",
                 email,
                 (error, result) => {
-                    !error ? resolve(result) : reject(new Error(error));
+                    !error ? resolve(result) : reject(new Error(error))
                 }
-            );
-        });
+            )
+        })
+    },
+    checkKey: (keys) => {
+        return new Promise((resolve, reject) => {
+            connection.query(
+                "SELECT * FROM user WHERE user_key = ?",
+                keys,
+                (error, result) => {
+                    !error ? resolve(result) : reject(new Error(error))
+                }
+            )
+        })
+    },
+    inviteFriends: (email) => {
+        return new Promise((resolve, reject) => {
+            connection.query(
+                "SELECT user_id, user_email, user_name, user_phone FROM user WHERE user_email LIKE ?",
+                email,
+                (error, result) => {
+                    !error ? resolve(result) : reject(new Error(error))
+                }
+            )
+        })
+    },
+    changePassword: (setData, email) => {
+        return new Promise((resolve, reject) => {
+            connection.query(
+                "UPDATE user SET ? WHERE user_email = ?",
+                [setData, email],
+                (error, result) => {
+                    if (!error) {
+                        const newResult = {
+                            user_email: email,
+                            ...setData,
+                        }
+                        resolve(newResult)
+                    } else {
+                        reject(new Error(error))
+                    }
+                }
+            )
+        })
     },
     deleteUser: (id) => {
         return new Promise((resolve, reject) => {
