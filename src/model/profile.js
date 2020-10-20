@@ -45,10 +45,10 @@ module.exports = {
     patchProfile: (setData, id) => {
         return new Promise((resolve, reject) => {
             connection.query(
-                "UPDATE profile SET ? WHERE profile_id = ?", [setData, id], (error, result) => {
+                "UPDATE profile SET ? WHERE user_id = ?", [setData, id], (error, result) => {
                     if (!error) {
                         const newResult = {
-                            profile_id: id,
+                            user_id: id,
                             ...setData,
                         }
                         resolve(newResult);

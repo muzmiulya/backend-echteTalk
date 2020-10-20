@@ -33,12 +33,25 @@ module.exports = {
                 }
                 await patchUser(setDataUser, user_id)
                 const setDataProfile = {
-                    profile_picture:
-                        request.file === undefined || request.file === '' ? checkUser[0].profile_picture : request.file.filename,
+                    profile_picture: request.file,
                     profile_bio,
                     profile_updated_at: new Date(),
                 }
-                if (setDataProfile.profile_picture === checkUser[0].profile_picture) {
+                if (checkUser[0].profile_picture === 'blank-profile.jpg') {
+                    if (request.file === undefined) {
+                        setDataProfile.profile_picture = 'blank-profile.jpg'
+                    } else {
+                        setDataProfile.profile_picture = request.file.filename
+                    }
+                    const result = await patchProfile(setDataProfile, user_id);
+                    return helper.response(
+                        response,
+                        200,
+                        "Success Profile Updated",
+                        result
+                    );
+                } else if (request.file === undefined) {
+                    setDataProfile.profile_picture = checkUser[0].profile_picture
                     const result = await patchProfile(setDataProfile, user_id);
                     return helper.response(
                         response,
@@ -47,14 +60,10 @@ module.exports = {
                         result
                     );
                 } else {
-                    const getProfilePicture = checkUser.map((value) => {
-                        return value.profile_picture;
-                    });
-                    const justPicture = getProfilePicture[0];
-                    const path = `./uploads/${justPicture}`;
-                    fs.unlink(path, (err) => {
-                        if (err) {
-                            return;
+                    setDataProfile.profile_picture = request.file.filename
+                    fs.unlink(`./uploads/${checkUser[0].profile_picture}`, (error) => {
+                        if (error) {
+                            throw error
                         }
                     });
                     const result = await patchProfile(setDataProfile, user_id);

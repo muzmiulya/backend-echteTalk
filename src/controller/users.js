@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer")
 const {
     isUserExist,
     getAllUser,
+    getId,
     getUserById,
     inviteFriends,
     patchUser,
@@ -12,15 +13,21 @@ const {
     checkUser,
     checkKey,
     changePassword,
-    deleteUser,
+    areWeFriend,
+    getFriendById,
+    postFriend,
+    getRoomchatForDelete,
+    getFriendForDelete,
+    checkRoomchatForDelete,
+    deleteContact,
+    deleteRoomchat,
 } = require("../model/users");
 const { postProfile } = require("../model/profile");
-// let refreshTokens = {}
 
 module.exports = {
     registerUser: async (request, response) => {
         try {
-            const { user_email, user_password, user_name, user_phone } = request.body;
+            const { user_email, user_password, user_name, user_phone, user_lat, user_lng } = request.body;
             const userInDatabase = await isUserExist(user_email);
             if (userInDatabase.length > 0) {
                 return helper.response(
@@ -75,6 +82,18 @@ module.exports = {
                     request.body.user_phone.length > 16
                 ) {
                     return helper.response(response, 404, "Invalid Phone Number");
+                } else if (
+                    request.body.user_lat === undefined ||
+                    request.body.user_lat === null ||
+                    request.body.user_lat === ""
+                ) {
+                    return helper.response(response, 404, "User lattitude must be filled");
+                } else if (
+                    request.body.user_lng === undefined ||
+                    request.body.user_lng === null ||
+                    request.body.user_lng === ""
+                ) {
+                    return helper.response(response, 404, "User longitude must be filled");
                 } else {
                     const salt = bcrypt.genSaltSync(10);
                     const encryptPassword = bcrypt.hashSync(user_password, salt);
@@ -83,17 +102,20 @@ module.exports = {
                         user_password: encryptPassword,
                         user_name: user_name,
                         user_phone: user_phone,
+                        user_lat: user_lat,
+                        user_lng: user_lng,
                         user_role: 2,
                         user_status: 1,
-                        user_created_at: new Date()
+                        user_created_at: new Date(),
+                        user_updated_at: new Date()
                     }
                     const result = await postUser(setData);
-                    console.log(result)
                     const setData2 = {
                         user_id: result.id,
-                        profile_picture: '',
+                        profile_picture: 'blank-profile.jpg',
                         profile_bio: '',
-                        profile_created_at: new Date()
+                        profile_created_at: new Date(),
+                        profile_updated_at: new Date()
                     }
                     const result2 = await postProfile(setData2)
                     return helper.response(
@@ -123,7 +145,6 @@ module.exports = {
             const { id } = request.params;
             const result = await getUserById(id);
             if (result.length > 0) {
-                // client.setex(`getuserbyid:${id}`, 3600, JSON.stringify(result));
                 return helper.response(response, 200, "Success Get User By Id", result);
             } else {
                 return helper.response(response, 404, `User By Id: ${id} Not Found`);
@@ -150,63 +171,78 @@ module.exports = {
             return helper.response(response, 400, "Bad Request", error);
         }
     },
-    patchUser: async (request, response) => {
+    getFriendById: async (request, response) => {
         try {
             const { id } = request.params;
-            const { user_name,
-                //  user_password,
-                user_phone,
-                // user_role,
-                // user_status
-            } = request.body;
-            const checkId = await getUserById(id);
-            console.log(checkId)
+            const result = await getFriendById(id);
+            if (result.length > 0) {
+                return helper.response(response, 200, "Success Get friend By Id", result);
+            } else {
+                const result = ''
+                return helper.response(response, 200, "Success Get friend By Id", result);
+            }
+        } catch (error) {
+            return helper.response(response, 400, "Bad Request", error);
+        }
+    },
+    postFriend: async (request, response) => {
+        try {
+            if (
+                request.body.user_id === undefined ||
+                request.body.user_id === null ||
+                request.body.user_id === ""
+            ) {
+                return helper.response(response, 404, "user id must be filled");
+            } else if (
+                request.body.friend_id === undefined ||
+                request.body.friend_id === null ||
+                request.body.friend_id === ""
+            ) {
+                return helper.response(response, 404, "user friend must be filled");
+            }
+            const { user_id, friend_id } = request.body
+            const friendinDatabase = await areWeFriend(user_id, friend_id);
+            if (
+                friendinDatabase.length > 0
+            ) {
+                return helper.response(response, 404, 'You are already friend');
+            } else {
+                const setData = {
+                    user_id: user_id,
+                    friend_id: friend_id,
+                    friend_created_at: new Date()
+                }
+                const friend = await postFriend(setData);
+                return helper.response(response, 200, "Friend Created", friend)
+            }
+        } catch (error) {
+            return helper.response(response, 400, "Bad Request", error);
+        }
+    },
+    patchLocation: async (request, response) => {
+        try {
+            const { id } = request.params;
+            const { user_lat, user_lng, } = request.body;
+            const checkId = await getId(id);
             if (checkId.length > 0) {
                 const setData = {
-                    user_name,
-                    // user_password,
-                    user_phone,
-                    // user_role,
-                    // user_status,
+                    user_lat,
+                    user_lng,
                     user_updated_at: new Date(),
                 };
-                // if (
-                //     request.body.user_password === undefined ||
-                //     request.body.user_password === null ||
-                //     request.body.user_password === ""
-                // ) {
-                //     setData.user_password = checkId[0].user_password;
-                // } else {
-                //     const salt = bcrypt.genSaltSync(10);
-                //     const encryptPassword = bcrypt.hashSync(user_password, salt);
-                //     setData.user_password = encryptPassword;
-                // }
                 if (
-                    request.body.user_name === undefined ||
-                    request.body.user_name === null ||
-                    request.body.user_name === ""
+                    request.body.user_lat === undefined ||
+                    request.body.user_lat === null ||
+                    request.body.user_lat === ""
                 ) {
-                    setData.user_name = checkId[0].user_name;
+                    return helper.response(response, 404, "user langitude must be filled");
                 } else if (
-                    request.body.user_phone === undefined ||
-                    request.body.user_phone === null ||
-                    request.body.user_phone === ""
+                    request.body.user_lng === undefined ||
+                    request.body.user_lng === null ||
+                    request.body.user_lng === ""
                 ) {
-                    setData.user_phone = checkId[0].user_phone;
+                    return helper.response(response, 404, "user lattitude must be filled");
                 }
-                // else if (
-                //     request.body.user_role === undefined ||
-                //     request.body.user_role === null ||
-                //     request.body.user_role === ""
-                // ) {
-                //     setData.user_role = checkId[0].user_role;
-                // } else if (
-                //     request.body.user_status === undefined ||
-                //     request.body.user_status === null ||
-                //     request.body.user_status === ""
-                // ) {
-                //     setData.user_status = checkId[0].user_status;
-                // }
                 const result = await patchUser(setData, id);
                 return helper.response(response, 200, "Success User Updated", result);
             } else {
@@ -216,15 +252,56 @@ module.exports = {
             return helper.response(response, 404, "Bad Request", error);
         }
     },
-    deleteUser: async (request, response) => {
+    // ======================================================delete===================================================
+    getRoomchatForDelete: async (request, response) => {
         try {
-            const { id } = request.params;
-            const result = await deleteUser(id);
-            return helper.response(response, 200, "Success User Deleted", result);
+            const { user_id, friend_id } = request.query;
+            const result = await getRoomchatForDelete(user_id, friend_id);
+            if (result.length > 0) {
+                return helper.response(response, 200, "Success Get Roomchat For Delete", result);
+            } else {
+                return helper.response(response, 404, `Roomchat Not Found`);
+            }
+        } catch (error) {
+            return helper.response(response, 400, "Bad Request", error);
+        }
+    },
+    deleteContact: async (request, response) => {
+        try {
+            const { id_friend } = request.params
+            if (id_friend === undefined || id_friend === null || id_friend === '') {
+                return helper.response(response, 404, "id_friend must be filled");
+            }
+            const checkIdFriend = await getFriendForDelete(id_friend)
+            if (checkIdFriend.length > 0) {
+                const result = await deleteContact(id_friend);
+                return helper.response(response, 200, "Contact Deleted Succesfully", result);
+            } else {
+                return helper.response(response, 404, "id_friend not found");
+            }
         } catch (error) {
             return helper.response(response, 404, "Bad Request", error);
         }
     },
+    deleteRoomchat: async (request, response) => {
+        try {
+            const { roomchat_id } = request.params
+            if (roomchat_id === undefined || roomchat_id === null || roomchat_id === '') {
+                return helper.response(response, 404, "roomchat_id must be filled");
+            }
+            const checkRoomchat = await checkRoomchatForDelete(roomchat_id)
+            if (checkRoomchat.length > 0) {
+                const result = await deleteRoomchat(roomchat_id);
+                return helper.response(response, 200, "Roomchat Deleted Succesfully", result);
+            } else {
+                return helper.response(response, 404, "Roomchat_id not found");
+            }
+        } catch (error) {
+            return helper.response(response, 404, "Bad Request", error);
+        }
+    },
+
+    // =======================================================================================================================
     loginUser: async (request, response) => {
         if (
             request.body.user_email === undefined ||
@@ -252,6 +329,9 @@ module.exports = {
                         user_id,
                         user_email,
                         user_name,
+                        user_phone,
+                        user_lat,
+                        user_lng,
                         user_role,
                         user_status,
                     } = checkDataUser[0];
@@ -259,9 +339,13 @@ module.exports = {
                         user_id,
                         user_email,
                         user_name,
+                        user_phone,
+                        user_lat,
+                        user_lng,
                         user_role,
                         user_status,
                     };
+                    console.log(payload)
                     if (user_status == 0) {
                         return helper.response(
                             response,
@@ -269,13 +353,7 @@ module.exports = {
                             "Your Account is not Active"
                         );
                     } else {
-                        const token = jwt.sign(payload, "RAHASIA", { expiresIn: "2h" });
-                        // const refreshToken = jwt.sign(payload, "RAHASIA", {
-                        //     expiresIn: "48h",
-                        // })
-                        // refreshTokens[refreshToken] = user_id
-                        // console.log(refreshTokens)
-                        // payload = { ...payload, token, refreshToken }
+                        const token = jwt.sign(payload, "RAHASIA", { expiresIn: "6h" });
                         payload = { ...payload, token };
                         return helper.response(response, 200, "Success Login", payload);
                     }
@@ -287,84 +365,6 @@ module.exports = {
             }
         } catch (error) {
             return helper.response(response, 400, "Bad Request");
-        }
-    },
-    activationEmail: async (request, response) => {
-        try {
-            const { user_email } = request.body;
-            const keys = Math.round(Math.random() * 100000);
-            const checkDataUser = await checkUser(user_email);
-            if (checkDataUser.length >= 1) {
-                const data = {
-                    user_key: keys,
-                    user_updated_at: new Date()
-                }
-                await changePassword(data, user_email)
-                const transporter = nodemailer.createTransport({
-                    host: 'smtp.gmail.com',
-                    port: 465,
-                    secure: true,
-                    auth: {
-                        user: process.env.USER,
-                        pass: process.env.PASS
-                    }
-                })
-                await transporter.sendMail({
-                    from: '"EchteTalk"',
-                    to: user_email,
-                    subject: "EchteTalk - Activation Email",
-                    html: `<a href="http://localhost:8080/activate?keys=${keys}">Click Here To Activate Your Account</a>`,
-                }),
-                    function (error) {
-                        if (error) {
-                            return helper.response(response, 400, 'Email not sent !')
-                        }
-                    }
-                return helper.response(response, 200, 'Email has been sent !')
-            } else {
-                return helper.response(response, 400, 'Email is not registered !')
-            }
-        } catch (error) {
-            return helper.response(response, 400, 'Bad Request', error)
-        }
-    },
-    activationUser: async (request, response) => {
-        try {
-            const { keys } = request.query;
-            const checkDataKey = await checkKey(keys);
-            if (
-                request.query.keys === undefined ||
-                request.query.keys === null ||
-                request.query.keys === ""
-            ) {
-                return helper.response(response, 400, "Invalid Key");
-            }
-            if (checkDataKey.length > 0) {
-                const email = checkDataKey[0].user_email
-                const setData = {
-                    user_key: '',
-                    user_status: 1,
-                    user_updated_at: new Date(),
-                };
-                const difference =
-                    setData.user_updated_at - checkDataKey[0].user_updated_at
-                const minutesDifference = Math.floor(difference / 1000 / 60)
-                if (minutesDifference > 15) {
-                    const data = {
-                        user_key: "",
-                        user_updated_at: new Date(),
-                    };
-                    await changePassword(data, email);
-                    return helper.response(response, 400, "Key has expired")
-                } else {
-                    const result = await changePassword(setData, email);
-                    return helper.response(response, 200, "Success Activate Account", result);
-                }
-            } else {
-                return helper.response(response, 400, `Invalid key`);
-            }
-        } catch (error) {
-            return helper.response(response, 404, "Bad Request", error)
         }
     },
     forgotPassword: async (request, response) => {
@@ -479,46 +479,5 @@ module.exports = {
         } catch (error) {
             return helper.response(response, 404, "Bad Request", error);
         }
-    },
-    // refreshToken: async (request, response) => {
-    //     const { user_id, refreshToken } = request.body
-    //     if (
-    //         refreshToken in refreshTokens &&
-    //         refreshTokens[refreshToken] == user_id
-    //     ) {
-    //         jwt.verify(refreshToken, "RAHASIA", (error, result) => {
-    //             if (
-    //                 (error && error.name === "JsonWebTokenError") ||
-    //                 (error && error.name === "TokenExpiredError")
-    //             ) {
-    //                 return helper.response(response, 403, error.message)
-    //             } else {
-    //                 delete result.iat
-    //                 delete result.exp
-    //                 delete refreshTokens[refreshToken] // delete refresh token yang lama
-    //                 const token = jwt.sign(result, "RAHASIA", { expiresIn: "1h" })
-    //                 const refreshTokenAgain = jwt.sign(result, "RAHASIA", {
-    //                     //bagian sini dibedakan namanya
-    //                     expiresIn: "48h",
-    //                 })
-
-    //                 refreshTokens[refreshTokenAgain] = user_id // input refresh token yang baru
-    //                 console.log(refreshTokens)
-    //                 const payload = { ...result, token, refreshToken: refreshTokenAgain }
-    //                 return helper.response(
-    //                     response,
-    //                     200,
-    //                     "Success Refresh Token !",
-    //                     payload
-    //                 )
-    //             }
-    //         })
-    //     } else {
-    //         return helper.response(
-    //             response,
-    //             403,
-    //             "Token Not Match Please Login Again !"
-    //         )
-    //     }
-    // },
+    }
 };

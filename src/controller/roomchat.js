@@ -1,9 +1,10 @@
 const {
     getMessageChatByRoom,
     getMessageByUserId,
+    getLatestMessageByRoom,
     getNotificationById,
     getRoomChatById,
-    getIdByRoomchat,
+    checkroomchat,
     postRoomChat,
     postMessage,
     postNotification
@@ -30,23 +31,43 @@ module.exports = {
         try {
             const { user_id } = request.params
             const result = await getRoomChatById(user_id)
+            const plusLatestMessage = await Promise.all(result.map(async (value) => {
+                const latestMessage = await getLatestMessageByRoom(value.roomchat_id)
+                const messages = latestMessage.map(value => {
+                    return value.msg
+                })
+                if (messages.length <= 0) {
+                    messages[0] = ''
+                }
+                const dates = latestMessage.map(value => {
+                    return value.msg_created_at
+                })
+                if (dates.length <= 0) {
+                    dates[0] = ''
+                } else {
+                    dates[0] = dates[0].toLocaleString([], { hour: '2-digit', minute: '2-digit' })
+                }
+                const setData = {
+                    roomchat_id: value.roomchat_id,
+                    user_id: value.user_id,
+                    friend_id: value.friend_id,
+                    user_email: value.user_email,
+                    user_name: value.user_name,
+                    user_phone: value.user_phone,
+                    user_lat: value.user_lat,
+                    user_lng: value.user_lng,
+                    profile_picture: value.profile_picture,
+                    profile_bio: value.profile_bio,
+                    latestMessage: messages[0],
+                    messageDate: dates[0]
+                }
+                return setData
+            }))
             if (result.length > 0) {
-                return helper.response(response, 200, "Succes get Roomchat By User Id", result)
+                return helper.response(response, 200, "Succes get Roomchat By User Id", plusLatestMessage)
             } else {
-                return helper.response(response, 404, `Message By Id : ${user_id} Not Found`)
-            }
-        } catch (error) {
-            return helper.response(response, 400, "Bad Request", error)
-        }
-    },
-    getIdByRoomchat: async (request, response) => {
-        try {
-            const { roomchat_id } = request.params
-            const result = await getIdByRoomchat(roomchat_id)
-            if (result.length > 0) {
-                return helper.response(response, 200, "Succes get Id By Roomchat", result)
-            } else {
-                return helper.response(response, 404, `ID By Roomchat : ${roomchat_id} Not Found`)
+                const plusLatestMessage = ''
+                return helper.response(response, 200, "Succes get Roomchat By User Id", plusLatestMessage)
             }
         } catch (error) {
             return helper.response(response, 400, "Bad Request", error)
@@ -59,7 +80,8 @@ module.exports = {
             if (result.length > 0) {
                 return helper.response(response, 200, "Success get Message By Roomchat Id", result)
             } else {
-                return helper.response(response, 404, `Message By Id : ${roomchat_id} Not Found`)
+                const result = ''
+                return helper.response(response, 200, "Success get Message By Roomchat Id", result)
             }
         } catch (error) {
             return helper.response(response, 400, "Bad Request", error)
@@ -67,12 +89,13 @@ module.exports = {
     },
     getNotificationById: async (request, response) => {
         try {
-            const { id } = request.params
-            const result = await getNotificationById(id)
+            const { user_id } = request.params
+            const result = await getNotificationById(user_id)
             if (result.length > 0) {
                 return helper.response(response, 200, "Succes get Notification By User Id", result)
             } else {
-                return helper.response(response, 404, `Notification By Id : ${user_id} Not Found`)
+                const result = 'no message'
+                return helper.response(response, 200, "Succes get Notification By User Id", result)
             }
         } catch (error) {
             return helper.response(response, 400, "Bad Request", error)
@@ -80,7 +103,6 @@ module.exports = {
     },
     postRoomChat: async (request, response) => {
         try {
-            const { user_id, friend_id } = request.body
             if (
                 request.body.user_id === undefined ||
                 request.body.user_id === null ||
@@ -93,6 +115,13 @@ module.exports = {
                 request.body.friend_id === ""
             ) {
                 return helper.response(response, 404, "user friend must be filled");
+            }
+            const { user_id, friend_id } = request.body
+            const isRoomchatExist = await checkroomchat(user_id, friend_id)
+            if (
+                isRoomchatExist.length > 0
+            ) {
+                return helper.response(response, 404, 'You are already have a roomchat');
             } else {
                 const roomChatId = Math.round(Math.random() * 100000)
                 const setData = {
@@ -101,23 +130,23 @@ module.exports = {
                     friend_id: friend_id,
                     created_at: new Date()
                 }
-                // const setData2 = {
-                //     roomchat_id: roomChatId,
-                //     user_id: user_friend,
-                //     created_at: new Date(),
-                // }
+                const setData2 = {
+                    roomchat_id: roomChatId,
+                    user_id: friend_id,
+                    friend_id: user_id,
+                    created_at: new Date()
+                }
                 const postUserId = await postRoomChat(setData);
-                // const postUserFriends = await postRoomChat(setData2);
+                const postFriendId = await postRoomChat(setData2);
                 return helper.response(response, 200, "Roomchat Created", postUserId)
             }
         } catch (error) {
-            // return helper.response(response, 400, "Bad Request", error);
-            console.log(error)
+            return helper.response(response, 400, "Bad Request", error);
         }
     },
     postMessage: async (request, response) => {
         try {
-            const { roomchat_id, user_id, receiver_id, msg } = request.body
+            const { roomchat_id, user_id, friend_id, msg } = request.body
             const setData = {
                 roomchat_id,
                 user_id,
@@ -126,8 +155,9 @@ module.exports = {
             }
             const setData2 = {
                 roomchat_id,
-                user_id: receiver_id,
-                notif: "You've got a New Message",
+                user_id: friend_id,
+                from_id: user_id,
+                notif: `${msg}`,
                 notif_created_at: new Date()
             }
             if (setData.roomchat_id === "") {

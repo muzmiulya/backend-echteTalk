@@ -2,33 +2,35 @@ const router = require("express").Router();
 const {
     registerUser,
     loginUser,
-    patchUser,
+    patchLocation,
     getAllUser,
     getUserById,
-    deleteUser,
-    activationEmail,
-    activationUser,
     forgotPassword,
     changePassword,
-    // refreshToken
     inviteFriends,
+    getFriendById,
+    postFriend,
+    getRoomchatForDelete,
+    deleteContact,
+    deleteRoomchat
 } = require("../controller/users");
 const { authorization, authorization2 } = require("../middleware/auth");
 
 router.post("/register", registerUser);
-router.patch("/patch/:id", authorization, patchUser);
+router.patch("/patch/location/:id", authorization, patchLocation);
 router.post("/login", loginUser);
 router.get("/user/", authorization2, getAllUser);
-router.get("/user/:id", getUserById);
-router.delete("/delete/:id", authorization2, deleteUser);
-router.get("/invite", authorization, inviteFriends);
+router.get("/user/:id", authorization, getUserById);
 
-router.post('/register/email', activationEmail)
-router.patch('/activate', activationUser)
+router.get("/get/roomchat", authorization, getRoomchatForDelete);
+router.delete("/delete/contact/:id_friend", authorization, deleteContact);
+router.delete("/delete/roomchat/:roomchat_id", authorization, deleteRoomchat);
+
+router.get("/invite", authorization, inviteFriends);
+router.get('/friend/:id', authorization, getFriendById)
+router.post('/friend', authorization, postFriend)
 
 router.post('/forgot', forgotPassword)
 router.patch('/change', changePassword)
-
-// router.post("/token", refreshToken)
 
 module.exports = router;

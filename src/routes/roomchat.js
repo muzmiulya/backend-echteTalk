@@ -3,7 +3,6 @@ const {
     getMessageChatByRoom,
     getMessageByUserId,
     getRoomChatById,
-    getIdByRoomchat,
     getNotificationById,
     postRoomChat,
     postMessage
@@ -11,9 +10,8 @@ const {
 
 router.get("/chat/message/:roomchat_id", getMessageChatByRoom)
 router.get("/chat/room/:user_id", getRoomChatById)
-router.get("/chat/users/:roomchat_id", getIdByRoomchat)
 router.get("/chat/user", getMessageByUserId)
-router.get("/chat/notif/:id", getNotificationById)
+router.get("/chat/notif/:user_id", getNotificationById)
 
 router.post("/", postRoomChat)
 router.post("/message", postMessage)

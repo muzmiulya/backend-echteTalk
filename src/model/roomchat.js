@@ -26,7 +26,7 @@ module.exports = {
     getRoomChatById: (id) => {
         return new Promise((resolve, reject) => {
             connection.query(
-                "SELECT roomchat.user_id, roomchat.friend_id, user.user_email, user.user_name, user.user_phone, profile.profile_picture, profile.profile_bio FROM roomchat JOIN user ON roomchat.friend_id = user.user_id JOIN profile ON roomchat.friend_id = profile.user_id WHERE roomchat.user_id = ?",
+                "SELECT roomchat.roomchat_id, roomchat.user_id, roomchat.friend_id, user.user_email, user.user_name, user.user_phone, user.user_lat, user.user_lng, profile.profile_picture, profile.profile_bio FROM roomchat JOIN user ON roomchat.friend_id = user.user_id JOIN profile ON roomchat.friend_id = profile.user_id WHERE roomchat.user_id = ?",
                 id,
                 (error, result) => {
                     !error ? resolve(result) : reject(new Error(error));
@@ -34,22 +34,11 @@ module.exports = {
             )
         })
     },
-    getRoomchatWithMessage: (id) => {
+    getLatestMessageByRoom: (roomId) => {
         return new Promise((resolve, reject) => {
             connection.query(
-                "SELECT roomchat.user_id, roomchat.friend_id, user.user_email, user.user_name, user.user_phone FROM roomchat JOIN user ON roomchat.friend_id = user.user_id JOIN messages ON roomchat.friend_id = messages.user_id WHERE roomchat.user_id = ? AND ORDER BY messages.msg_created_at DESC LIMIT 1",
-                id,
-                (error, result) => {
-                    !error ? resolve(result) : reject(new Error(error));
-                }
-            )
-        })
-    },
-    getIdByRoomchat: (id) => {
-        return new Promise((resolve, reject) => {
-            connection.query(
-                "SELECT * FROM roomchat WHERE roomchat.roomchat_id = ?",
-                id,
+                "SELECT * FROM messages WHERE roomchat_id = ? ORDER BY msg_created_at DESC LIMIT 1",
+                roomId,
                 (error, result) => {
                     !error ? resolve(result) : reject(new Error(error));
                 }
@@ -59,13 +48,24 @@ module.exports = {
     getNotificationById: (id) => {
         return new Promise((resolve, reject) => {
             connection.query(
-                "SELECT * FROM notification LEFT JOIN user ON notification.user_id = user.user_id WHERE notification.user_id = ?",
+                "SELECT notification.roomchat_id, notification.user_id, notification.from_id, notification.notif, notification.notif_created_at, user.user_email, user.user_name, user.user_phone FROM notification JOIN user ON notification.from_id = user.user_id WHERE notification.user_id = ? ORDER BY notif_created_at DESC LIMIT 5",
                 id,
                 (error, result) => {
                     !error ? resolve(result) : reject(new Error(error));
                 }
             )
         })
+    },
+    checkroomchat: (userId, friendId) => {
+        return new Promise((resolve, reject) => {
+            connection.query(
+                "SELECT user_id, friend_id FROM roomchat WHERE user_id = ? AND friend_id = ?",
+                [userId, friendId],
+                (error, result) => {
+                    !error ? resolve(result) : reject(new Error(error));
+                }
+            );
+        });
     },
     postRoomChat: (setData) => {
         return new Promise((resolve, reject) => {

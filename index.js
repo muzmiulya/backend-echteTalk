@@ -17,21 +17,21 @@ const io = socket(server);
 io.on("connection", (socket) => {
   console.log("Socket.io Connected !");
 
-  socket.on("globalMessage", (data) => {
-    io.emit("chatMessage", data);
-  });
-  socket.on("privateMessage", (data) => {
-    socket.emit("chatMessage", data);
-  });
-  socket.on("broadcastMessage", (data) => {
-    socket.broadcast.emit("chatMessage", data);
-  });
+  // socket.on("globalMessage", (data) => {
+  //   io.emit("chatMessage", data);
+  // });
+  // socket.on("privateMessage", (data) => {
+  //   socket.emit("chatMessage", data);
+  // });
+  // socket.on("broadcastMessage", (data) => {
+  //   socket.broadcast.emit("chatMessage", data);
+  // });
 
   socket.on("welcomeMessage", (data) => {
-    socket.emit("chatMessage", {
-      username: "BOT",
-      message: `Welcome Back ${data.username} !`,
-    });
+    // socket.emit("chatMessage", {
+    //   username: "BOT",
+    //   message: `Welcome Back ${data.username} !`,
+    // });
     // Global
     // socket.broadcast.emit("chatMessage", {
     //   username: "BOT",
@@ -39,15 +39,19 @@ io.on("connection", (socket) => {
     // });
     // Specific
     socket.join(data.room);
-    socket.broadcast.to(data.room).emit("chatMessage", {
-      username: "BOT",
-      message: `${data.username} Joined Chat !`,
-    });
-
-    socket.on("roomMessage", (data) => {
-      io.to(data.room).emit("chatMessage", data);
-    });
+    // socket.broadcast.to(data.room).emit("chatMessage", {
+    //   username: "BOT",
+    //   message: `${data.username} Joined Chat !`,
   });
+  socket.on("changeRoom", (data) => {
+    // console.log(data);
+    socket.leave(data.oldRoom)
+    socket.join(data.newRoom)
+  })
+  socket.on("roomMessage", (data) => {
+    io.to(data.roomchat_id).emit("chatMessage", data);
+  });
+  // });
 
   socket.on("typing", (data) => {
     socket.broadcast.to(data.room).emit("typingMessage", data.username);
