@@ -43,13 +43,18 @@ io.on("connection", (socket) => {
     //   username: "BOT",
     //   message: `${data.username} Joined Chat !`,
   });
+  socket.on("joinNotification", (data) => {
+    socket.join(data.user)
+  })
   socket.on("changeRoom", (data) => {
-    // console.log(data);
-    socket.leave(data.oldRoom)
-    socket.join(data.newRoom)
+    socket.leave(data.oldRoom.roomchat_id)
+    socket.join(data.newRoom.roomchat_id)
   })
   socket.on("roomMessage", (data) => {
     io.to(data.roomchat_id).emit("chatMessage", data);
+  });
+  socket.on("sendNotification", (data) => {
+    socket.broadcast.to(data.friend_id).emit("notification", data);
   });
   // });
 
