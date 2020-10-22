@@ -1,7 +1,6 @@
 const helper = require("../helper/index");
 const {
     getProfile,
-    getProfileById,
     patchProfile
 } = require("../model/profile");
 const { getUserById, patchUser } = require("../model/users")
@@ -78,7 +77,8 @@ module.exports = {
                 return helper.response(response, 404, `Profile By Id: ${id} Not Found`)
             }
         } catch (error) {
-            return helper.response(response, 400, "Bad Request", error)
+            // return helper.response(response, 400, "Bad Request", error)
+            console.log(error)
         }
     },
 }
