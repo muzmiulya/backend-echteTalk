@@ -107,7 +107,8 @@ module.exports = {
                         user_role: 2,
                         user_status: 1,
                         user_created_at: new Date(),
-                        user_updated_at: new Date()
+                        user_updated_at: new Date(),
+                        user_key: 0
                     }
                     const result = await postUser(setData);
                     const setData2 = {
