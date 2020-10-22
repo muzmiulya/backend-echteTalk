@@ -129,7 +129,8 @@ module.exports = {
             }
 
         } catch (error) {
-            return helper.response(response, 400, "Bad Request");
+            // return helper.response(response, 400, "Bad Request");
+            console.log(error)
         }
     },
     getAllUser: async (request, response) => {
@@ -364,7 +365,8 @@ module.exports = {
                 return helper.response(response, 400, "Email is not Registered !");
             }
         } catch (error) {
-            return helper.response(response, 400, "Bad Request");
+            // return helper.response(response, 400, "Bad Request");
+            console.log(error)
         }
     },
     forgotPassword: async (request, response) => {
