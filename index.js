@@ -9,7 +9,6 @@ const socket = require("socket.io");
 
 const app = express();
 app.use(cors());
-// app.use(bodyParser.json({ limit: '50mb' })); app.use(bodyParser.urlencoded({ extended: true, limit: '50mb' }));
 
 const http = require("http");
 const server = http.createServer(app);
@@ -17,32 +16,8 @@ const io = socket(server);
 
 io.on("connection", (socket) => {
   console.log("Socket.io Connected !");
-
-  // socket.on("globalMessage", (data) => {
-  //   io.emit("chatMessage", data);
-  // });
-  // socket.on("privateMessage", (data) => {
-  //   socket.emit("chatMessage", data);
-  // });
-  // socket.on("broadcastMessage", (data) => {
-  //   socket.broadcast.emit("chatMessage", data);
-  // });
-
   socket.on("welcomeMessage", (data) => {
-    // socket.emit("chatMessage", {
-    //   username: "BOT",
-    //   message: `Welcome Back ${data.username} !`,
-    // });
-    // Global
-    // socket.broadcast.emit("chatMessage", {
-    //   username: "BOT",
-    //   message: `${data.username} Joined Chat !`,
-    // });
-    // Specific
     socket.join(data.room);
-    // socket.broadcast.to(data.room).emit("chatMessage", {
-    //   username: "BOT",
-    //   message: `${data.username} Joined Chat !`,
   });
   socket.on("joinNotification", (data) => {
     socket.join(data.user)
@@ -57,8 +32,6 @@ io.on("connection", (socket) => {
   socket.on("sendNotification", (data) => {
     socket.broadcast.to(data.friend_id).emit("notification", data);
   });
-  // });
-
   socket.on("typing", (data) => {
     socket.broadcast.to(data.room).emit("typingMessage", data.username);
   });

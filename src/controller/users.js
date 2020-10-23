@@ -253,7 +253,6 @@ module.exports = {
             return helper.response(response, 404, "Bad Request", error);
         }
     },
-    // ======================================================delete===================================================
     getRoomchatForDelete: async (request, response) => {
         try {
             const { user_id, friend_id } = request.query;
@@ -301,8 +300,6 @@ module.exports = {
             return helper.response(response, 404, "Bad Request", error);
         }
     },
-
-    // =======================================================================================================================
     loginUser: async (request, response) => {
         if (
             request.body.user_email === undefined ||
@@ -346,7 +343,6 @@ module.exports = {
                         user_role,
                         user_status,
                     };
-                    console.log(payload)
                     if (user_status == 0) {
                         return helper.response(
                             response,
